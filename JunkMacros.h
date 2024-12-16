@@ -3,123 +3,118 @@
 JunkMacros.h
 Created July 2021
 Author tostring#1337
+Edited December 2024
+Editor Bartam0us
+
 ----------------------------------------------
 */
 
-#pragma once
-#include <Windows.h>
+#ifndef JUNK_MACROS_H
+#define JUNK_MACROS_H
 
-consteval unsigned fshiftrandom()
-{
-    unsigned short lfsr = __TIME__[7] * 2;
-    unsigned bit;
+#include <cstdint>
+#include <cstdlib>
+#include <ctime>
 
-    bit = ((lfsr >> 0) ^ (lfsr >> 2) ^ (lfsr >> 3) ^ (lfsr >> 5)) & 1;
-    return lfsr = (lfsr >> 1) | (bit << 15);
+// Random number generation based on compile time
+constexpr uint32_t fshiftrandom(uint32_t input) {
+    return (input >> 1) ^ (-(input & 1u) & 0xA300FDE7);
 }
 
-void junkcallme() {};
-float junkcallme2() { return 3.402823466e+38F + 1; };
+constexpr uint32_t compiledrand = fshiftrandom(__TIME__[0] + __TIME__[1] * 60 + __TIME__[2] * 3600);
+constexpr uint32_t compiledrand2 = fshiftrandom(compiledrand);
+constexpr uint32_t compiledrandMAX = compiledrand2 % 1000 + 1; // Maximum iteration range
 
-constexpr int compiledrand = fshiftrandom() % 100;
-constexpr int compiledrand2 = fshiftrandom() % 1337;
-constexpr int compiledrandMAX = fshiftrandom() % 2147483647;
+// Junk functions
+void junkcallme() {
+    // Empty function for junk calls
+}
 
-template <size_t N>
+float junkcallme2() {
+    return 3.402823466e+38F + 1; // Return a very large float
+}
+
+// NOPCOMPILE: Generates "nop" instructions
+template<int iterations>
 struct NOPCOMPILE {
-    template <size_t I>
-    static void gen() {
-        __asm nop
-        if constexpr (I + 1 < N) NOPCOMPILE<N>::gen<I + 1>();
+    inline __attribute__((always_inline)) void operator()() {
+        __asm__ __volatile__("nop");
+        NOPCOMPILE<iterations - 1>()();
     }
 };
 
-template <size_t N>
+template<>
+struct NOPCOMPILE<0> {
+    inline __attribute__((always_inline)) void operator()() {}
+};
+
+// MOVCOMPILE: Generates random mov instructions
+template<int iterations>
 struct MOVCOMPILE {
-    template <size_t I>
-    static void gen() {
-        constexpr int yes = fshiftrandom() % 1337;
-        __asm { 
-            push ah
-            mov ah, BYTE PTR yes
-            pop ah
-        }
-        if constexpr (I + 1 < N) MOVCOMPILE<N>::gen<I + 1>();
+    inline __attribute__((always_inline)) void operator()() {
+        volatile int temp = compiledrand;
+        __asm__ __volatile__("mov %%eax, %0" : : "r"(temp) : "eax");
+        MOVCOMPILE<iterations - 1>()();
     }
 };
 
-template <size_t N>
-struct WINDFUNCSCOMPILE {
-    template <size_t I>
-    static void gen() {
-        rand();
-        FindWindowA((char*)(90 + fshiftrandom() % 30),NULL);
-        GetCurrentProcessId();
-        GetCurrentProcess();
-        GetProcessHeap();
-
-        if constexpr (I + 1 < N) WINDFUNCSCOMPILE<N>::gen<I + 1>();
-    }
+template<>
+struct MOVCOMPILE<0> {
+    inline __attribute__((always_inline)) void operator()() {}
 };
 
-template <size_t N>
+// NULLSUBCOMPILE: Generates calls to junkcallme
+template<int iterations>
 struct NULLSUBCOMPILE {
-    template <size_t I>
-    static void gen() {
-        __asm call junkcallme
-
-        if constexpr (I + 1 < N) NULLSUBCOMPILE<N>::gen<I + 1>();
+    inline __attribute__((always_inline)) void operator()() {
+        junkcallme();
+        NULLSUBCOMPILE<iterations - 1>()();
     }
 };
 
-template <size_t N>
+template<>
+struct NULLSUBCOMPILE<0> {
+    inline __attribute__((always_inline)) void operator()() {}
+};
+
+// IFCOMPILE: Adds conditional junk instructions
+template<int iterations>
 struct IFCOMPILE {
-    template <size_t I>
-    static void gen() {
-        __asm {
-            cmp    al, BYTE PTR compiledrand2
-            jl     Less
-            mov    al, 1
-            call junkcallme2
-            jl     Less
-            call junkcallme
-            mov al, BYTE PTR compiledrand2
-            dec al
-            jmp    Both
-            Less :
-            mov ah, BYTE PTR CHAR_MAX
-            xor ah, al
-            jmp Both
-            Both :
-            inc al
-            xor al, BYTE PTR compiledrand
+    inline __attribute__((always_inline)) void operator()() {
+        if (compiledrand % 2) {
+            junkcallme();
+        } else {
+            junkcallme2();
         }
-
-        if constexpr (I + 1 < N) IFCOMPILE<N>::gen<I + 1>();
+        IFCOMPILE<iterations - 1>()();
     }
 };
 
-template <size_t N>
+template<>
+struct IFCOMPILE<0> {
+    inline __attribute__((always_inline)) void operator()() {}
+};
+
+// JMPCOMPILE: Generates jump instructions
+template<int iterations>
 struct JMPCOMPILE {
-    template <size_t I>
-    static void gen() {
-        __asm {
-            jmp myes
-            myes :
-        }
-
-        if constexpr (I + 1 < N) JMPCOMPILE<N>::gen<I + 1>();
+    inline __attribute__((always_inline)) void operator()() {
+        __asm__ __volatile__("jmp .label_%=\n"
+                ".label_%=:");
+        JMPCOMPILE<iterations - 1>()();
     }
 };
 
-#define NOP_JUNK(am) NOPCOMPILE<((am == 0) ? (fshiftrandom() % 50 + 1) : am)>::gen<0>()
+template<>
+struct JMPCOMPILE<0> {
+    inline __attribute__((always_inline)) void operator()() {}
+};
 
-#define MOV_JUNK(am) MOVCOMPILE<((am == 0) ? (fshiftrandom() % 50 + 1) : am)>::gen<0>()
+// Macros
+#define NOP_JUNK(am) NOPCOMPILE<(am == 0 ? compiledrandMAX : am)>()()
+#define MOV_JUNK(am) MOVCOMPILE<(am == 0 ? compiledrandMAX : am)>()()
+#define NULLSUB_JUNK(am) NULLSUBCOMPILE<(am == 0 ? compiledrandMAX : am)>()()
+#define IF_JUNK(am) IFCOMPILE<(am == 0 ? compiledrandMAX : am)>()()
+#define JMP_JUNK(am) JMPCOMPILE<(am == 0 ? compiledrandMAX : am)>()()
 
-#define WIND_JUNK(am) WINDFUNCSCOMPILE<((am == 0) ? (fshiftrandom() % 20 + 1) : am)>::gen<0>()
-
-#define NULLSUB_JUNK(am) NULLSUBCOMPILE<((am == 0) ? (fshiftrandom() % 60 + 1) : am)>::gen<0>()
-
-#define IF_JUNK(am) IFCOMPILE<((am == 0) ? (fshiftrandom() % 15 + 1) : am)>::gen<0>()
-
-#define JMP_JUNK(am) JMPCOMPILE<((am == 0) ? (fshiftrandom() % 50 + 1) : am)>::gen<0>()
+#endif
