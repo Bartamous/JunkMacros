@@ -21,6 +21,12 @@ IF_JUNK - Generates assembly that is equivalent to a C if statement, if used rig
 
 JMP_JUNK - Generates assembly that jumps between generated nodes, does not effect ida pseudocode.
 
+## Example
+```
+  NOP_JUNK(10); // Generates exactly 10 NOP instructions
+  
+```
+
 # Additions
 
 + Windows Libary not needed anymore, std libary will work
