@@ -13,10 +13,17 @@ NOP_JUNK - Generates opcode 90(nop) which is an instruction that gets ignored, b
 
 MOV_JUNK - Generates assembly to push and move a random number into the stack x amount of times, causes interesting and funny ida pseudocode results.
 
-WIND_JUNK - Internally calls random hardcoded selected windows functions.
+~~WIND_JUNK - Internally calls random hardcoded selected windows functions.~~
 
 NULLSUB_JUNK - Generates assembly that calls a nullsub function x amount of times, an empty void function, if used right after MOV_JUNK will confuse ida pseudocode really hard.
 
 IF_JUNK - Generates assembly that is equivalent to a C if statement, if used right after MOV_JUNK will confuse ida pseudocode even harder than NULLSUB_JUNK.
 
 JMP_JUNK - Generates assembly that jumps between generated nodes, does not effect ida pseudocode.
+
+# Additions
+
++ Windows Libary not needed anymore, std libary will work
+- Windows calls removed
+
+I changed this header file to work for linux, plus I made this code inline.
